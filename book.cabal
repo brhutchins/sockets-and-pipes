@@ -1,0 +1,14 @@
+cabal-version: 3.0
+name: book
+version: 0
+data-files: **/*.txt
+
+library
+  default-language:   Haskell2010
+  default-extensions: BlockArguments
+                      QuasiQuotes
+                      TypeApplications
+                      ScopedTypeVariables
+  ghc-options:        -Wall -fdefer-typed-holes
+  build-depends:      sockets-and-pipes ^>= 0.3
+  exposed-modules:    Book
