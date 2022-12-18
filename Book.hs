@@ -19,6 +19,8 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Char as Char
 
+import qualified Data.ByteString as BS
+
 helloText :: IO ()
 helloText = T.hPutStrLn stdout (T.pack "hello world!")
 
@@ -169,3 +171,18 @@ repeatUntil getChunk isEnd f = continue
       unless (isEnd chunk) do
         _ <- f chunk
         continue
+
+exampleBytes :: [Word8]
+exampleBytes = [104, 101, 108, 108, 111]
+
+copyGreetingFile :: IO ()
+copyGreetingFile = runResourceT @IO do
+  dir <- liftIO getDataDir
+  (_, h1) <-
+    binaryFileResource (dir </> "greeting.txt") ReadMode
+  (_, h2) <-
+    binaryFileResource (dir </> "greeting2.txt") WriteMode
+  liftIO $ repeatUntil (BS.hGetSome h1 1024) BS.null \chunk -> BS.hPutStr h2 chunk
+
+binaryFileResource :: FilePath -> IOMode -> ResourceT IO (ReleaseKey, Handle)
+binaryFileResource path mode = allocate (IO.openBinaryFile path mode) IO.hClose
