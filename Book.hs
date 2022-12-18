@@ -112,15 +112,13 @@ repeatUntilIO getChunk isEnd f = continue
   where
     continue = do
       chunk <- getChunk
-      case isEnd chunk of
-        True -> pure ()
-        False -> do { _ <- f chunk; continue }
+      unless (isEnd chunk) do { _ <- f chunk; continue }
 
 printFileContentsUpperCase2 :: IO ()
 printFileContentsUpperCase2 = runResourceT @IO do
   dir <- liftIO getDataDir
   (_, h) <- fileResource (dir </> "greeting.txt") ReadMode
-  liftIO $ repeatUntilIO (T.hGetChunk h) T.null \chunk ->
+  liftIO $ repeatUntil (T.hGetChunk h) T.null \chunk ->
     T.putStr (T.toUpper chunk)
 
 digitsOnly :: Text -> Text
@@ -159,3 +157,15 @@ characterCount fp = runResourceT @IO do
           False -> do
             nextChunkLength <- countByChunk h
             pure $ T.length chunk + nextChunkLength
+
+repeatUntil :: (Monad m) => m chunk -- ^ Producer of chunks
+  -> (chunk -> Bool) -- ^ Does the chunk indicate the end of the file
+  -> (chunk -> m x) -- ^ What to do with each chunk
+  -> m ()
+repeatUntil getChunk isEnd f = continue
+  where
+    continue = do
+      chunk <- getChunk
+      unless (isEnd chunk) do
+        _ <- f chunk
+        continue
